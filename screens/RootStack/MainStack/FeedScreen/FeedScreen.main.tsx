@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, FlatList, Text } from "react-native";
-import { Appbar, Button, Card } from "react-native-paper";
-import firebase from "firebase/app";
-import "firebase/firestore";
+import { View, FlatList } from "react-native";
+import { Appbar, Card } from "react-native-paper";
+import { getFirestore, collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { SocialModel } from "../../../../models/social.js";
 import { styles } from "./FeedScreen.styles";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { MainStackParamList } from "../MainStackScreen.js";
+import { getAuth, signOut } from "firebase/auth";
 
 /* 
   Remember the navigation-related props from Project 2? They were called `route` and `navigation`,
@@ -27,15 +27,14 @@ export default function FeedScreen({ navigation }: Props) {
   // List of social objects
   const [socials, setSocials] = useState<SocialModel[]>([]);
 
-  const currentUserId = firebase.auth().currentUser!.uid;
+  const auth = getAuth();
+  const currentUserId = auth.currentUser!.uid;
+  const db = getFirestore();
+  const socialsCollection = collection(db, "socials");
 
   useEffect(() => {
-    const db = firebase.firestore();
-    const unsubscribe = db
-      .collection("socials")
-      .orderBy("eventDate", "asc")
-      .onSnapshot((querySnapshot: any) => {
-        var newSocials: SocialModel[] = [];
+    const unsubscribe = onSnapshot(query(socialsCollection, orderBy("eventDate", "asc")), (querySnapshot) => {
+      var newSocials: SocialModel[] = [];
         querySnapshot.forEach((social: any) => {
           const newSocial = social.data() as SocialModel;
           newSocial.id = social.id;
@@ -88,7 +87,7 @@ export default function FeedScreen({ navigation }: Props) {
       <Appbar.Header>
         <Appbar.Action
           icon="exit-to-app"
-          onPress={() => firebase.auth().signOut()}
+          onPress={() => signOut(auth)}
         />
         <Appbar.Content title="Socials" />
         <Appbar.Action

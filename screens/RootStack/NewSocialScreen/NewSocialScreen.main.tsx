@@ -12,8 +12,9 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import * as ImagePicker from "expo-image-picker";
 import { styles } from "./NewSocialScreen.styles";
 
-import firebase from "firebase/app";
-import "firebase/firestore";
+import { getFirestore, doc, collection, setDoc } from "firebase/firestore";
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { getApp } from "firebase/app";
 import { SocialModel } from "../../../models/social";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../RootStackScreen";
@@ -117,19 +118,16 @@ export default function NewSocialScreen({ navigation }: Props) {
       console.log("getting file object");
       const object: Blob = (await getFileObjectAsync(eventImage)) as Blob;
       // Generate a brand new doc ID by calling .doc() on the socials node.
-      const socialRef = firebase.firestore().collection("socials").doc();
+      const db = getFirestore();
+      const socialsCollection = collection(db, "socials");
+      const socialRef = doc(socialsCollection);
       console.log("putting file object");
-      const result = await firebase
-        .storage()
-        .ref()
-        .child(socialRef.id + ".jpg")
-        .put(object);
+      const storage = getStorage(getApp());
+      const storageRef = ref(storage, socialRef.id + ".jpg");
+      const result = await uploadBytes(storageRef, object);
       console.log("getting download url");
-      const downloadURL = await result.ref.getDownloadURL();
-      // TODO: You may want to update this SocialModel's default
-      // fields by adding one or two attributes to help you with
-      // interested/likes & deletes
-      const doc: SocialModel = {
+      const downloadURL = await getDownloadURL(result.ref);
+      const socialDoc: SocialModel = {
         eventName: eventName,
         eventDate: eventDate.getTime(),
         eventLocation: eventLocation,
@@ -137,10 +135,10 @@ export default function NewSocialScreen({ navigation }: Props) {
         eventImage: downloadURL,
       };
       console.log("setting download url");
-      await socialRef.set(doc);
+      await setDoc(socialRef, socialDoc);
       setLoading(false);
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
       showError(error.toString());
     }
@@ -162,21 +160,24 @@ export default function NewSocialScreen({ navigation }: Props) {
         <TextInput
           label="Event Name"
           value={eventName}
-          onChangeText={(name: any) => setEventName(name)}
+          onChangeText={(name) => setEventName(name)}
           style={{ backgroundColor: "white", marginBottom: 10 }}
+          autoComplete={false}
         />
         <TextInput
           label="Event Location"
           value={eventLocation}
-          onChangeText={(location: any) => setEventLocation(location)}
+          onChangeText={(location) => setEventLocation(location)}
           style={{ backgroundColor: "white", marginBottom: 10 }}
+          autoComplete={false}
         />
         <TextInput
           label="Event Description"
           value={eventDescription}
           multiline={true}
-          onChangeText={(desc: any) => setEventDescription(desc)}
+          onChangeText={(desc) => setEventDescription(desc)}
           style={{ backgroundColor: "white", marginBottom: 10 }}
+          autoComplete={false}
         />
         <Button
           mode="outlined"

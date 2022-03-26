@@ -37,6 +37,6 @@ export function EntryStackScreen() {
       </NavigationContainer>
     );
   } else {
-    return RootStackScreen();
+    return <RootStackScreen />;
   }
 }
