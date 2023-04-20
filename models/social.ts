@@ -6,7 +6,7 @@ export interface SocialModel {
   eventLocation: string;
   eventName: string;
   currentUser: string;
-  interestedUsers: string[];
+  interested: boolean;
 
   // TODO: You may need to add attributes here
   // to implement your desired functionality.
